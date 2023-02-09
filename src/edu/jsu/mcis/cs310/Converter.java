@@ -1,7 +1,11 @@
 package edu.jsu.mcis.cs310;
 
 import com.github.cliftonlabs.json_simple.*;
-import com.opencsv.*;
+import com.opencsv.CSVReader;
+import java.io.StringReader;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class Converter {
     
@@ -80,6 +84,26 @@ public class Converter {
         
             // INSERT YOUR CODE HERE
             
+            CSVReader reader = new CSVReader(new StringReader(csvString));
+            List<String[]> full = reader.readAll();
+            Iterator<String[]> iterator = full.iterator();
+            JsonArray records = new JsonArray();
+            if (iterator.hasNext()){
+                String[] headings = iterator.next();
+                while(iterator.hasNext()){
+                    String[] csvRecord = iterator.next();
+                    LinkedHashMap<String, String> jsonRecord = new LinkedHashMap<>();
+                    //JsonObject jsonRecord = new JsonObject();
+                    for (int i = 0; i < headings.length; ++i){
+                        jsonRecord.put(headings[i], csvRecord[i]);
+                    }
+                    
+                    records.add(jsonRecord);
+                }
+            }
+            result = Jsoner.serialize(records);
+            
+            
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -97,7 +121,22 @@ public class Converter {
         try {
             
             // INSERT YOUR CODE HERE
+            /*
+                I am citing this page as a resource I used to implement this method.
+                https://github.com/Ziggomatica/cs310-csv-json/blob/master/src/main/java/edu/jsu/mcis/Converter.java
+                The following code has been borrowed and converted to the new json-simple format we are using. 
+            */
+            JsonObject parser = (JsonObject) Jsoner.deserialize(jsonString);
+            JsonArray prodNums = (JsonArray) parser.get("ProdNums");
+            JsonArray colHeadings = (JsonArray) parser.get("ColHeadings");
+            JsonArray data = (JsonArray) parser.get("Data");
+            result = Converter.<String>joinArray((JsonArray) colHeadings) + "\n";
             
+            for (int i = 0; i < prodNums.size(); i++){
+                result = (result + "\"" + (String)prodNums.get(i) + "\"," + Converter.<Long>joinArray((JsonArray) data.get(i)) + "\n");
+            }
+            
+
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -105,6 +144,22 @@ public class Converter {
         
         return result.trim();
         
+    }
+  /*
+        I am citing this page as a resource I used to implement this method.
+        https://github.com/Ziggomatica/cs310-csv-json/blob/master/src/main/java/edu/jsu/mcis/Converter.java
+        The following code has been borrowed and converted to the new json-simple format we are using. 
+ */
+     @SuppressWarnings("unchecked")
+    private static <T> String joinArray(JsonArray array) {
+        String line = "";
+        for(int i = 0; i < array.size(); i++) {
+            line = (line + "\"" + ((T) array.get(i)) + "\"");
+            if(i < array.size() - 1) {
+                line = line + ",";            
+            }
+        }
+        return line;
     }
     
 }
